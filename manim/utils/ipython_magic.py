@@ -23,6 +23,20 @@ except ImportError:
     pass
 else:
 
+    from IPython.display import Javascript
+
+    def gen_cell(text, replace=False):
+        display(Javascript(f"""
+        const selected_cell = IPython.notebook.get_selected_cell();
+        const selected_cell_index = IPython.notebook.get_cells().indexOf(selected_cell);
+        var next_cell = IPython.notebook.get_cell(selected_cell_index + 1);
+        if (next_cell.cell_type !== 'markdown' || !next_cell.get_text().startsWith('![]')) {{
+            !{str(replace).lower()} && IPython.notebook.insert_cell_below('markdown')
+            next_cell = IPython.notebook.get_cell(selected_cell_index + 1);
+        }}
+        next_cell.set_text('{text}');
+        next_cell.render();"""))
+
     @magics_class
     class ManimMagic(Magics):
         def __init__(self, shell):
@@ -160,6 +174,8 @@ else:
 
                 # videos need to be embedded when running in google colab
                 video_embed = "google.colab" in str(get_ipython())
+
+                gen_cell(f'![](./{tmpfile})')
 
                 display(
                     Video(
